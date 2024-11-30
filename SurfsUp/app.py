@@ -102,42 +102,21 @@ def tobs():
     return jsonify(tobs_list)
 
 @app.route("/api/v1.0/<start>")
-def start_date(start):
-    # create session
-    session=Session(engine)
-
-    # Calculate the date one year from the last date in data set.
-    latest_year_start = dt.date(2017, 8, 23) - dt.timedelta(days=365)
-
-    latest_year_temp=session.query(func.min(measurements.tobs), func.max(measurements.tobs),func.avg(measurements.tobs)).\
-                        filter(measurements.date >=latest_year_start).all()
-    session.close()
-
-    tobs_obs={}
-    tobs_obs["Min Temp"]=latest_year_temp[0][0]
-    tobs_obs["Avg Temp"]=latest_year_temp[0][1]
-    tobs_obs["Max Temp"]=latest_year_temp[0][2]
-    return jsonify(tobs_obs)
-
 @app.route("/api/v1.0/<start>/<end>")
-def temp_start_end(start,end):
-    # Create our session (link) from Python to the DB
-    session = Session(engine)
-    
-    start = dt.date(2016, 10, 23)
-    end = dt.date(2017, 8, 23)
-    # Query to find minimum, average, and maximum temps from start_date to end_date
-    query_result = session.query(func.min(measurements.tobs),
-                                 func.avg(measurements.tobs),
-                                 func.max(measurements.tobs)).\
-                            filter(measurements.date >= start).\
-                            filter(measurements.date <= end).all()
-    
+def temps(start=None, end=None):
+
+    if not end:
+        results = session.query(func.min(measurements.tobs), func.avg(measurements.tobs), func.max(measurements.tobs)).\
+            filter(measurements.date >= start).all()
+        temps = list(np.ravel(results))
+        session.close()
+        return jsonify(temps)
+  
+    results = session.query(func.min(measurements.tobs), func.avg(measurements.tobs), func.max(measurements.tobs)).\
+        filter(measurements.date >= start).filter(measurements.date <= end).all()  
+    temps = list(np.ravel(results))
     session.close()
-    temp_stats = list(np.ravel(query_result))
-    return jsonify(temp_stats)
-
-
+    return jsonify(temps)
 
 if __name__ == "__main__":
     app.run(debug=True)
